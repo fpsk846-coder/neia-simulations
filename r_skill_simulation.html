@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이아 - R: 폭우</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            overflow-x: hidden;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFFCEF;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px 20px 20px;
+        }
+        
+        .header {
+            background: #6BBCCB;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 0 0 30px 0;
+            color: white;
+            width: 100%;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .control-panel {
+            background: #E1EFE8;
+            padding: 25px;
+            border-radius: 15px;
+            width: 350px;
+        }
+        
+        .btn {
+            padding: 12px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #6BBCCB;
+            border: 2px solid #6BBCCB;
+        }
+        
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #E1EFE8;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #6BBCCB;
+            white-space: nowrap;
+        }
+        
+        .info-item span:last-child {
+            white-space: nowrap;
+        }
+        
+        .simulation-area {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #6BBCCB;
+            flex: 1;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #E1EFE8;
+            border-radius: 10px;
+            color: #6BBCCB;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .field {
+            position: relative;
+            width: 1000px;
+            height: 1000px;
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .char {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+            font-size: 0.9em;
+            cursor: grab;
+            user-select: none;
+            z-index: 20;
+        }
+        
+        .neia {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .ally {
+            background: #E1EFE8;
+            color: #6BBCCB;
+            border: 3px solid #6BBCCB;
+        }
+        
+        .enemy {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .rain-range {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 192, 203, 0.15), rgba(255, 192, 203, 0.35));
+            border: 5px solid #ffb6c1;
+            display: none;
+            z-index: 1;
+        }
+        
+        .shield-range {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(107, 188, 203, 0.25), rgba(107, 188, 203, 0.15));
+            border: 5px solid #6BBCCB;
+            display: none;
+            z-index: 2;
+        }
+        
+        .umbrella {
+            position: absolute;
+            display: none;
+            z-index: 3;
+        }
+        
+        .umbrella-visual {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(
+                from 0deg,
+                #6BBCCB 0deg 45deg,
+                white 45deg 90deg,
+                #6BBCCB 90deg 135deg,
+                white 135deg 180deg,
+                #6BBCCB 180deg 225deg,
+                white 225deg 270deg,
+                #6BBCCB 270deg 315deg,
+                white 315deg 360deg
+            );
+            border: 5px solid #6BBCCB;
+        }
+        
+        .umbrella.rotating .umbrella-visual {
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .raindrop {
+            position: absolute;
+            width: 3px;
+            height: 25px;
+            background: linear-gradient(to bottom, transparent, #6BBCCB);
+            animation: fall 0.6s linear;
+            z-index: 4;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(120px);
+                opacity: 0;
+            }
+        }
+        
+        .shield-icon {
+            position: absolute;
+            background: #6BBCCB;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            display: none;
+            z-index: 25;
+        }
+        
+        .knockback-arrow {
+            position: absolute;
+            font-size: 2.5em;
+            display: none;
+            animation: blink 0.6s;
+            z-index: 25;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💧 네이아 - R: 폭우</h1>
+        <p>Torrential Downpour</p>
+    </div>
+    
+    <div class="container">
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h3 style="color: #6BBCCB; margin-bottom: 15px;">🎮 스킬 사용</h3>
+                <button class="btn btn-primary" onclick="start()">⛈️ R 스킬 발동</button>
+                <button class="btn btn-secondary" onclick="reset()">🔄 리셋</button>
+                
+                <div class="info-box">
+                    <h4 style="color: #6BBCCB; margin-bottom: 10px;">💧 범위</h4>
+                    <div class="info-item">
+                        <span class="info-label">기본 우산:</span>
+                        <span>200 units</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">확대 우산:</span>
+                        <span>500 units</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">폭우:</span>
+                        <span>800 units</span>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h4 style="color: #6BBCCB; margin-bottom: 10px;">⚡ 효과</h4>
+                    <div class="info-item">
+                        <span class="info-label">초당 피해:</span>
+                        <span>100/150/200</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">보호막:</span>
+                        <span>250/400/550</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">둔화:</span>
+                        <span>40%</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">지속:</span>
+                        <span>3초</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-area">
+                <div class="status" id="msg">R 스킬 발동 버튼 클릭</div>
+                
+                <div class="field" id="field">
+                    <div class="char neia" style="left: 460px; top: 460px;">네이아<br>80U</div>
+                    <div class="char ally" style="left: 310px; top: 460px;">아군<br>80U</div>
+                    <div class="char ally" style="left: 610px; top: 460px;">아군<br>80U</div>
+                    <div class="char enemy" style="left: 380px; top: 290px;">적<br>80U</div>
+                    <div class="char enemy" style="left: 460px; top: 240px;">적<br>80U</div>
+                    <div class="char enemy" style="left: 540px; top: 290px;">적<br>80U</div>
+                    
+                    <div class="rain-range" id="rainRange"></div>
+                    <div class="shield-range" id="shieldRange"></div>
+                    <div class="umbrella" id="umbrella">
+                        <div class="umbrella-visual"></div>
+                    </div>
+                    
+                    <div class="shield-icon" id="s1">🛡️ 보호막</div>
+                    <div class="shield-icon" id="s2">🛡️ 보호막</div>
+                    
+                    <div class="knockback-arrow" id="k1">⬅️</div>
+                    <div class="knockback-arrow" id="k2">⬆️</div>
+                    <div class="knockback-arrow" id="k3">➡️</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let running = false;
+        
+        const field = document.getElementById('field');
+        const neia = document.querySelector('.neia');
+        const allies = document.querySelectorAll('.ally');
+        const enemies = document.querySelectorAll('.enemy');
+        const umbrella = document.getElementById('umbrella');
+        const shieldRange = document.getElementById('shieldRange');
+        const rainRange = document.getElementById('rainRange');
+        const msg = document.getElementById('msg');
+        const shields = [document.getElementById('s1'), document.getElementById('s2')];
+        const knocks = [document.getElementById('k1'), document.getElementById('k2'), document.getElementById('k3')];
+        
+        function start() {
+            if (running) return;
+            running = true;
+            
+            const centerX = 500;
+            const centerY = 500;
+            
+            msg.textContent = '0.1s: 네이아가 우산을 하늘로!';
+            
+            setTimeout(() => {
+                umbrella.style.width = '200px';
+                umbrella.style.height = '200px';
+                umbrella.style.left = (centerX - 100) + 'px';
+                umbrella.style.top = (centerY - 100) + 'px';
+                umbrella.style.display = 'block';
+                umbrella.style.opacity = '1';
+            }, 100);
+            
+            setTimeout(() => {
+                umbrella.style.transition = 'all 0.6s';
+                umbrella.style.width = '230px';
+                umbrella.style.height = '230px';
+                umbrella.style.left = (centerX - 115) + 'px';
+                umbrella.style.top = (centerY - 115) + 'px';
+                msg.textContent = '0.2s: 우산 공중으로 (z축)';
+            }, 200);
+            
+            setTimeout(() => {
+                umbrella.style.width = '500px';
+                umbrella.style.height = '500px';
+                umbrella.style.left = (centerX - 250) + 'px';
+                umbrella.style.top = (centerY - 250) + 'px';
+                umbrella.style.opacity = '0.3';
+                umbrella.classList.add('rotating');
+                
+                rainRange.style.width = '800px';
+                rainRange.style.height = '800px';
+                rainRange.style.left = (centerX - 400) + 'px';
+                rainRange.style.top = (centerY - 400) + 'px';
+                rainRange.style.display = 'block';
+                
+                shieldRange.style.width = '500px';
+                shieldRange.style.height = '500px';
+                shieldRange.style.left = (centerX - 250) + 'px';
+                shieldRange.style.top = (centerY - 250) + 'px';
+                shieldRange.style.display = 'block';
+                
+                msg.textContent = '0.8s: 우산 확대 + 투명화 + 회전!';
+                
+                makeRain(centerX, centerY);
+            }, 800);
+            
+            setTimeout(() => {
+                allies.forEach((ally, i) => {
+                    const ax = parseInt(ally.style.left) + 40;
+                    const ay = parseInt(ally.style.top) + 40;
+                    const d = Math.sqrt((ax-centerX)*(ax-centerX) + (ay-centerY)*(ay-centerY));
+                    
+                    if (d <= 250) {
+                        shields[i].style.left = parseInt(ally.style.left) + 'px';
+                        shields[i].style.top = (parseInt(ally.style.top) - 35) + 'px';
+                        shields[i].style.display = 'block';
+                    }
+                });
+                
+                enemies.forEach((enemy, i) => {
+                    const ex = parseInt(enemy.style.left) + 40;
+                    const ey = parseInt(enemy.style.top) + 40;
+                    const d = Math.sqrt((ex-centerX)*(ex-centerX) + (ey-centerY)*(ey-centerY));
+                    
+                    if (d <= 400) {
+                        const angle = Math.atan2(ey - centerY, ex - centerX);
+                        const newX = Math.max(10, Math.min(parseInt(enemy.style.left) + Math.cos(angle) * 120, 910));
+                        const newY = Math.max(10, Math.min(parseInt(enemy.style.top) + Math.sin(angle) * 120, 910));
+                        
+                        enemy.style.transition = 'all 0.5s';
+                        enemy.style.left = newX + 'px';
+                        enemy.style.top = newY + 'px';
+                        
+                        knocks[i].style.left = (newX + 20) + 'px';
+                        knocks[i].style.top = (newY + 20) + 'px';
+                        knocks[i].style.display = 'block';
+                        
+                        setTimeout(() => knocks[i].style.display = 'none', 600);
+                    }
+                });
+                
+                msg.textContent = '1.2s: 아군 보호막 + 적 넉백!';
+            }, 1200);
+            
+            setTimeout(() => {
+                umbrella.style.display = 'none';
+                umbrella.classList.remove('rotating');
+                shieldRange.style.display = 'none';
+                rainRange.style.display = 'none';
+                shields.forEach(s => s.style.display = 'none');
+                umbrella.style.transition = '';
+                
+                msg.textContent = '폭우 종료';
+                running = false;
+            }, 4200);
+        }
+        
+        function makeRain(cx, cy) {
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => {
+                    const drop = document.createElement('div');
+                    drop.className = 'raindrop';
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = Math.random() * 380;
+                    drop.style.left = (cx + Math.cos(angle) * dist) + 'px';
+                    drop.style.top = (cy + Math.sin(angle) * dist - 60) + 'px';
+                    field.appendChild(drop);
+                    setTimeout(() => drop.remove(), 600);
+                }, i * 35);
+            }
+        }
+        
+        function reset() {
+            running = false;
+            umbrella.style.display = 'none';
+            umbrella.classList.remove('rotating');
+            shieldRange.style.display = 'none';
+            rainRange.style.display = 'none';
+            shields.forEach(s => s.style.display = 'none');
+            knocks.forEach(k => k.style.display = 'none');
+            umbrella.style.transition = '';
+            
+            allies[0].style.transition = 'all 0.3s';
+            allies[1].style.transition = 'all 0.3s';
+            enemies[0].style.transition = 'all 0.3s';
+            enemies[1].style.transition = 'all 0.3s';
+            enemies[2].style.transition = 'all 0.3s';
+            
+            allies[0].style.left = '310px';
+            allies[0].style.top = '460px';
+            allies[1].style.left = '610px';
+            allies[1].style.top = '460px';
+            
+            enemies[0].style.left = '380px';
+            enemies[0].style.top = '290px';
+            enemies[1].style.left = '460px';
+            enemies[1].style.top = '240px';
+            enemies[2].style.left = '540px';
+            enemies[2].style.top = '290px';
+            
+            setTimeout(() => {
+                allies.forEach(a => a.style.transition = '');
+                enemies.forEach(e => e.style.transition = '');
+            }, 300);
+            
+            msg.textContent = 'R 스킬 발동 버튼 클릭';
+        }
+        
+        let drag = null;
+        let ox = 0, oy = 0;
+        
+        document.querySelectorAll('.char').forEach(c => {
+            if (c.classList.contains('neia')) return;
+            c.addEventListener('mousedown', function(e) {
+                drag = this;
+                const r = this.getBoundingClientRect();
+                ox = e.clientX - r.left;
+                oy = e.clientY - r.top;
+                e.stopPropagation();
+            });
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!drag) return;
+            const r = field.getBoundingClientRect();
+            let x = e.clientX - r.left - ox;
+            let y = e.clientY - r.top - oy;
+            x = Math.max(0, Math.min(x, 920));
+            y = Math.max(0, Math.min(y, 920));
+            drag.style.left = x + 'px';
+            drag.style.top = y + 'px';
+        });
+        
+        document.addEventListener('mouseup', () => drag = null);
+    </script>
+</body>
+</html>
