@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이아 - 물자국 패시브 스킬 시뮬레이션</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fffcef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: #fffcef;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .header {
+            background: #6bbccb;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-box {
+            background: white;
+            border: 3px solid #6bbccb;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-box h3 {
+            color: #6bbccb;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #e1efe8;
+            padding-bottom: 10px;
+        }
+
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #e1efe8;
+            border: 4px solid #6bbccb;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .character {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #6bbccb 0%, #4a9daa 100%);
+            border-radius: 50%;
+            border: 4px solid #2d7d8a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            cursor: move;
+        }
+
+        .character::after {
+            content: '네이아';
+            position: absolute;
+            top: -30px;
+            background: rgba(107, 188, 203, 0.95);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            white-space: nowrap;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .watermark {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, rgba(107, 188, 203, 0.6) 0%, rgba(107, 188, 203, 0.3) 60%, transparent 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            border: 2px solid rgba(107, 188, 203, 0.4);
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(1.3);
+            }
+        }
+
+        .enemy {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            border-radius: 50%;
+            border: 4px solid #c92a2a;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            cursor: move;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .enemy::after {
+            content: '적';
+            position: absolute;
+            top: -30px;
+            background: rgba(238, 90, 111, 0.95);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .enemy.slowed {
+            box-shadow: 0 0 25px rgba(107, 188, 203, 1);
+            animation: slowPulse 0.6s ease-in-out infinite;
+        }
+
+        @keyframes slowPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(107, 188, 203, 0.8);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(107, 188, 203, 1);
+            }
+        }
+
+        .stack-indicator {
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(107, 188, 203, 0.95);
+            color: white;
+            padding: 5px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            display: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .enemy.slowed .stack-indicator {
+            display: block;
+        }
+
+        .slider-box {
+            margin-bottom: 15px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .slider-value {
+            color: #6bbccb;
+            font-weight: bold;
+            font-size: 15px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #e1efe8;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #6bbccb;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+            background: #4a9daa;
+            transform: scale(1.1);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #6bbccb;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+
+        .big-button {
+            background: #6bbccb;
+            color: white;
+            border: none;
+            padding: 20px;
+            font-size: 1.5em;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .big-button:hover {
+            background: #4a9daa;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .big-button:active {
+            transform: translateY(-1px);
+        }
+
+        .big-button.stop {
+            background: #ee5a6f;
+        }
+
+        .big-button.stop:hover {
+            background: #c92a2a;
+        }
+
+        .control-btn {
+            background: white;
+            color: #6bbccb;
+            border: 2px solid #6bbccb;
+            padding: 12px 20px;
+            font-size: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .control-btn:hover {
+            background: #6bbccb;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 2px solid #e1efe8;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #555;
+            font-weight: 600;
+        }
+
+        .info-value {
+            color: #6bbccb;
+            font-weight: bold;
+        }
+
+        .instructions {
+            background: #e1efe8;
+            border-left: 5px solid #6bbccb;
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+
+        .instructions h4 {
+            color: #6bbccb;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .instructions p {
+            color: #555;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .instructions strong {
+            color: #2d7d8a;
+        }
+
+        .icon {
+            font-size: 1.2em;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💧 네이아 - 물자국 패시브 스킬</h1>
+            <p>Watermark Passive Skill Simulation</p>
+        </div>
+
+        <div class="content">
+            <div class="left-panel">
+                <div class="panel-box">
+                    <h3>🎮 시뮬레이션 제어</h3>
+                    <button class="big-button" id="startBtn" onclick="toggleSimulation()">
+                        ▶ 시작
+                    </button>
+                    <button class="control-btn" onclick="resetSimulation()">🔄 리셋</button>
+                    <button class="control-btn" onclick="clearWatermarks()">🧹 물자국 초기화</button>
+                </div>
+
+                <div class="panel-box">
+                    <h3>⚙️ 파라미터 설정</h3>
+                    
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>네이아 이동속도</span>
+                            <span class="slider-value" id="speedValue">325 units/s</span>
+                        </div>
+                        <input type="range" min="100" max="500" value="325" class="slider" id="speedSlider">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>적 추격 속도</span>
+                            <span class="slider-value" id="enemySpeedValue">200 units/s</span>
+                        </div>
+                        <input type="range" min="50" max="400" value="200" class="slider" id="enemySpeedSlider">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>물자국 생성 간격</span>
+                            <span class="slider-value" id="intervalValue">0.2 초</span>
+                        </div>
+                        <input type="range" min="0.1" max="1.0" step="0.1" value="0.2" class="slider" id="intervalSlider">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>물자국 지속시간</span>
+                            <span class="slider-value" id="durationValue">3.0 초</span>
+                        </div>
+                        <input type="range" min="1.0" max="10.0" step="0.5" value="3.0" class="slider" id="durationSlider">
+                    </div>
+
+                    <div class="slider-box">
+                        <div class="slider-label">
+                            <span>중첩당 둔화율</span>
+                            <span class="slider-value" id="slowRateValue">10 %</span>
+                        </div>
+                        <input type="range" min="5" max="25" step="5" value="10" class="slider" id="slowRateSlider">
+                    </div>
+                </div>
+
+                <div class="panel-box">
+                    <h3>📊 시뮬레이션 정보</h3>
+                    <div class="info-row">
+                        <span class="info-label">물자국 개수</span>
+                        <span class="info-value" id="watermarkCount">0</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">적의 중첩</span>
+                        <span class="info-value" id="stackCount">0중첩</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">적 이동속도</span>
+                        <span class="info-value" id="currentSpeed">100%</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">시뮬레이션 상태</span>
+                        <span class="info-value" id="simStatus">대기 중</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="instructions">
+                    <h4><span class="icon">📖</span>사용 방법</h4>
+                    <p><strong>1단계:</strong> 네이아(파란색 💧)와 적(빨간색 👹)을 드래그하여 원하는 위치에 배치하세요.</p>
+                    <p><strong>2단계:</strong> 좌측 파라미터를 조절하여 원하는 설정을 만드세요.</p>
+                    <p><strong>3단계:</strong> "시작" 버튼을 누르면 적이 네이아를 추격하고, 네이아는 도망가며 물자국을 남깁니다!</p>
+                    <p><strong>💡 팁:</strong> 적이 물자국을 밟으면 둔화되어 추격 속도가 감소합니다. 최대 4중첩까지 쌓입니다.</p>
+                </div>
+
+                <div class="panel-box" style="flex: 1;">
+                    <div class="game-area" id="gameArea">
+                        <div class="character" id="character">💧</div>
+                        <div class="enemy" id="enemy">
+                            <div class="stack-indicator"></div>
+                            👹
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const character = document.getElementById('character');
+        const enemy = document.getElementById('enemy');
+        const startBtn = document.getElementById('startBtn');
+        const stackIndicator = enemy.querySelector('.stack-indicator');
+        
+        let characterX = 200;
+        let characterY = 200;
+        let enemyX = 700;
+        let enemyY = 400;
+        
+        let isRunning = false;
+        let watermarks = [];
+        let watermarkCount = 0;
+        let lastWatermarkTime = 0;
+        let animationFrame = null;
+        
+        // 설정 가능한 파라미터
+        let moveSpeed = 325;
+        let enemySpeed = 200;
+        let watermarkInterval = 200;
+        let watermarkDuration = 3000;
+        let slowRate = 0.10;
+        
+        // 적 상태
+        let enemyStack = 0;
+        let enemyStackTimer = null;
+        let currentEnemySpeed = enemySpeed;
+        
+        // 드래그 상태
+        let isDraggingCharacter = false;
+        let isDraggingEnemy = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // 초기 위치 설정
+        character.style.left = characterX + 'px';
+        character.style.top = characterY + 'px';
+        enemy.style.left = enemyX + 'px';
+        enemy.style.top = enemyY + 'px';
+
+        // 슬라이더 이벤트
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            moveSpeed = parseInt(e.target.value);
+            document.getElementById('speedValue').textContent = `${moveSpeed} units/s`;
+        });
+
+        document.getElementById('enemySpeedSlider').addEventListener('input', (e) => {
+            enemySpeed = parseInt(e.target.value);
+            document.getElementById('enemySpeedValue').textContent = `${enemySpeed} units/s`;
+            if (!isRunning) currentEnemySpeed = enemySpeed;
+        });
+
+        document.getElementById('intervalSlider').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            watermarkInterval = value * 1000;
+            document.getElementById('intervalValue').textContent = `${value.toFixed(1)} 초`;
+        });
+
+        document.getElementById('durationSlider').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            watermarkDuration = value * 1000;
+            document.getElementById('durationValue').textContent = `${value.toFixed(1)} 초`;
+        });
+
+        document.getElementById('slowRateSlider').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            slowRate = value / 100;
+            document.getElementById('slowRateValue').textContent = `${value} %`;
+        });
+
+        // 캐릭터 드래그
+        character.addEventListener('mousedown', (e) => {
+            if (isRunning) return;
+            e.stopPropagation();
+            isDraggingCharacter = true;
+            const rect = character.getBoundingClientRect();
+            const gameRect = gameArea.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            character.style.cursor = 'grabbing';
+        });
+
+        enemy.addEventListener('mousedown', (e) => {
+            if (isRunning) return;
+            e.stopPropagation();
+            isDraggingEnemy = true;
+            const rect = enemy.getBoundingClientRect();
+            const gameRect = gameArea.getBoundingClientRect();
+            dragOffsetX = e.clientX - rect.left;
+            dragOffsetY = e.clientY - rect.top;
+            enemy.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingCharacter) {
+                const rect = gameArea.getBoundingClientRect();
+                const x = Math.max(0, Math.min(e.clientX - rect.left - dragOffsetX, gameArea.offsetWidth - 50));
+                const y = Math.max(0, Math.min(e.clientY - rect.top - dragOffsetY, gameArea.offsetHeight - 50));
+                characterX = x;
+                characterY = y;
+                character.style.left = x + 'px';
+                character.style.top = y + 'px';
+            }
+            if (isDraggingEnemy) {
+                const rect = gameArea.getBoundingClientRect();
+                const x = Math.max(0, Math.min(e.clientX - rect.left - dragOffsetX, gameArea.offsetWidth - 50));
+                const y = Math.max(0, Math.min(e.clientY - rect.top - dragOffsetY, gameArea.offsetHeight - 50));
+                enemyX = x;
+                enemyY = y;
+                enemy.style.left = x + 'px';
+                enemy.style.top = y + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDraggingCharacter) {
+                isDraggingCharacter = false;
+                character.style.cursor = 'move';
+            }
+            if (isDraggingEnemy) {
+                isDraggingEnemy = false;
+                enemy.style.cursor = 'move';
+            }
+        });
+
+        function toggleSimulation() {
+            if (isRunning) {
+                stopSimulation();
+            } else {
+                startSimulation();
+            }
+        }
+
+        function startSimulation() {
+            isRunning = true;
+            character.style.cursor = 'default';
+            enemy.style.cursor = 'default';
+            startBtn.textContent = '⏸ 정지';
+            startBtn.classList.add('stop');
+            document.getElementById('simStatus').textContent = '실행 중';
+            lastWatermarkTime = Date.now();
+            runSimulation();
+        }
+
+        function stopSimulation() {
+            isRunning = false;
+            character.style.cursor = 'move';
+            enemy.style.cursor = 'move';
+            startBtn.textContent = '▶ 시작';
+            startBtn.classList.remove('stop');
+            document.getElementById('simStatus').textContent = '일시정지';
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+        }
+
+        function runSimulation() {
+            if (!isRunning) return;
+
+            const currentTime = Date.now();
+
+            // 네이아와 적 사이의 거리와 방향 계산
+            const dx = characterX - enemyX;
+            const dy = characterY - enemyY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // 네이아가 항상 적으로부터 도망
+            const escapeSpeed = moveSpeed / 60;
+            const directionX = dx / distance;
+            const directionY = dy / distance;
+            
+            let newCharX = characterX + directionX * escapeSpeed;
+            let newCharY = characterY + directionY * escapeSpeed;
+            
+            // 경계 체크
+            newCharX = Math.max(0, Math.min(newCharX, gameArea.offsetWidth - 50));
+            newCharY = Math.max(0, Math.min(newCharY, gameArea.offsetHeight - 50));
+            
+            characterX = newCharX;
+            characterY = newCharY;
+            character.style.left = characterX + 'px';
+            character.style.top = characterY + 'px';
+
+            // 물자국 생성
+            if (currentTime - lastWatermarkTime >= watermarkInterval) {
+                createWatermark(characterX, characterY);
+                lastWatermarkTime = currentTime;
+            }
+
+            // 적이 네이아를 추격
+            const chaseSpeed = currentEnemySpeed / 60;
+            const chaseX = (dx / distance) * chaseSpeed;
+            const chaseY = (dy / distance) * chaseSpeed;
+            
+            enemyX = Math.max(0, Math.min(enemyX + chaseX, gameArea.offsetWidth - 50));
+            enemyY = Math.max(0, Math.min(enemyY + chaseY, gameArea.offsetHeight - 50));
+            enemy.style.left = enemyX + 'px';
+            enemy.style.top = enemyY + 'px';
+
+            // 적이 물자국 밟았는지 체크
+            checkWatermarkCollision();
+
+            animationFrame = requestAnimationFrame(runSimulation);
+        }
+
+        function createWatermark(x, y) {
+            const watermark = document.createElement('div');
+            watermark.className = 'watermark';
+            watermark.style.left = x + 'px';
+            watermark.style.top = y + 'px';
+            watermark.style.animation = `fadeOut ${watermarkDuration / 1000}s ease-out forwards`;
+            gameArea.appendChild(watermark);
+
+            const watermarkData = {
+                element: watermark,
+                x: x + 25,
+                y: y + 25,
+                radius: 25,
+                createdAt: Date.now()
+            };
+            watermarks.push(watermarkData);
+            watermarkCount++;
+            updateWatermarkCount();
+
+            setTimeout(() => {
+                watermark.remove();
+                const index = watermarks.indexOf(watermarkData);
+                if (index > -1) {
+                    watermarks.splice(index, 1);
+                }
+            }, watermarkDuration);
+        }
+
+        function checkWatermarkCollision() {
+            const enemyCenterX = enemyX + 25;
+            const enemyCenterY = enemyY + 25;
+            let hitWatermark = false;
+
+            for (const watermark of watermarks) {
+                const distance = Math.sqrt(
+                    Math.pow(enemyCenterX - watermark.x, 2) + 
+                    Math.pow(enemyCenterY - watermark.y, 2)
+                );
+
+                if (distance < watermark.radius + 25) {
+                    hitWatermark = true;
+                    
+                    if (enemyStack < 4) {
+                        enemyStack++;
+                        updateEnemyVisual();
+                    }
+
+                    if (enemyStackTimer) {
+                        clearTimeout(enemyStackTimer);
+                    }
+                    enemyStackTimer = setTimeout(() => {
+                        enemyStack = 0;
+                        updateEnemyVisual();
+                    }, watermarkDuration);
+
+                    break;
+                }
+            }
+        }
+
+        function updateEnemyVisual() {
+            currentEnemySpeed = enemySpeed * (1 - enemyStack * slowRate);
+            
+            if (enemyStack > 0) {
+                enemy.classList.add('slowed');
+                const slowPercent = Math.round(enemyStack * slowRate * 100);
+                stackIndicator.textContent = `${enemyStack}중첩 (-${slowPercent}%)`;
+            } else {
+                enemy.classList.remove('slowed');
+                stackIndicator.textContent = '';
+                currentEnemySpeed = enemySpeed;
+            }
+
+            document.getElementById('stackCount').textContent = `${enemyStack}중첩`;
+            document.getElementById('currentSpeed').textContent = `${Math.round((currentEnemySpeed / enemySpeed) * 100)}%`;
+        }
+
+        function clearWatermarks() {
+            watermarks.forEach(w => w.element.remove());
+            watermarks = [];
+            watermarkCount = 0;
+            updateWatermarkCount();
+        }
+
+        function resetSimulation() {
+            stopSimulation();
+            clearWatermarks();
+            
+            characterX = 200;
+            characterY = 200;
+            enemyX = 700;
+            enemyY = 400;
+            
+            character.style.left = characterX + 'px';
+            character.style.top = characterY + 'px';
+            enemy.style.left = enemyX + 'px';
+            enemy.style.top = enemyY + 'px';
+            
+            enemyStack = 0;
+            currentEnemySpeed = enemySpeed;
+            updateEnemyVisual();
+            
+            document.getElementById('simStatus').textContent = '대기 중';
+        }
+
+        function updateWatermarkCount() {
+            document.getElementById('watermarkCount').textContent = watermarkCount;
+        }
+
+        updateEnemyVisual();
+    </script>
+</body>
+</html>
