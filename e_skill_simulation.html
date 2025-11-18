@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이아 - E: 물 응덩이</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFFCEF;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #6BBCCB;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .control-panel {
+            background: #E1EFE8;
+            padding: 25px;
+            border-radius: 15px;
+            width: 350px;
+        }
+        
+        .btn {
+            padding: 12px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #6BBCCB;
+            border: 2px solid #6BBCCB;
+        }
+        
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #E1EFE8;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #6BBCCB;
+        }
+        
+        .simulation-area {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #6BBCCB;
+            flex: 1;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            background: #E1EFE8;
+            border-radius: 10px;
+            color: #6BBCCB;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .field {
+            position: relative;
+            width: 100%;
+            height: 700px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+        }
+        
+        .char {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-align: center;
+            line-height: 1.2;
+            font-size: 0.9em;
+            cursor: grab;
+            user-select: none;
+        }
+        
+        .neia {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .enemy {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        /* 스킬 사거리 (투명, 점선) */
+        .range-circle {
+            position: absolute;
+            width: 1100px;
+            height: 1100px;
+            border: 3px dashed rgba(107, 188, 203, 0.4);
+            border-radius: 50%;
+            background: rgba(107, 188, 203, 0.02);
+            display: none;
+            pointer-events: none;
+        }
+        
+        /* 물 응덩이 (분홍색) */
+        .blob {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, 
+                rgba(255, 192, 203, 0.9), 
+                rgba(255, 192, 203, 0.5));
+            border: 5px solid #ffb6c1;
+            border-radius: 50%;
+            display: none;
+            pointer-events: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .blob-text {
+            background: #ffb6c1;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .mark {
+            position: absolute;
+            background: #6BBCCB;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            font-weight: bold;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💧 네이아 - E: 물 웅덩이</h1>
+            <p>Water Blob</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h3 style="color: #6BBCCB; margin-bottom: 15px;">🎮 스킬 사용</h3>
+                <button class="btn btn-primary" onclick="start()">💧 E 스킬 발동</button>
+                <button class="btn btn-secondary" onclick="reset()">🔄 리셋</button>
+                
+                <div class="info-box">
+                    <div class="info-item">
+                        <span class="info-label">초당 피해:</span>
+                        <span>30 (+AP 30%)</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">범위:</span>
+                        <span>300 units</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">사거리:</span>
+                        <span>550 units</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">지속:</span>
+                        <span>4초</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">둔화:</span>
+                        <span>30%</span>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h4 style="color: #6BBCCB; margin-bottom: 10px;">⚙️ 끌어당김 강도</h4>
+                    <input type="range" id="pullSlider" min="20" max="150" value="80" 
+                           style="width: 100%; margin-bottom: 10px;">
+                    <div style="text-align: center; color: #6BBCCB; font-weight: bold;">
+                        <span id="pullValue">80</span> units
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-area">
+                <div class="status" id="msg">
+                    E 스킬 발동 버튼을 클릭하세요
+                </div>
+                
+                <div class="field" id="field">
+                    <div class="char neia" style="left: 400px; top: 550px;">네이아<br>80U</div>
+                    <div class="char enemy" style="left: 350px; top: 200px;">적<br>80U</div>
+                    <div class="char enemy" style="left: 450px; top: 150px;">적<br>80U</div>
+                    <div class="char enemy" style="left: 550px; top: 200px;">적<br>80U</div>
+                    
+                    <div class="range-circle" id="range"></div>
+                    <div class="blob" id="blob">
+                        <div class="blob-text">물 웅덩이 300U</div>
+                    </div>
+                    
+                    <div class="mark" id="m1">💧 물자국</div>
+                    <div class="mark" id="m2">💧 물자국</div>
+                    <div class="mark" id="m3">💧 물자국</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let active = false;
+        let running = false;
+        let pullStrength = 80;
+        
+        const field = document.getElementById('field');
+        const neia = document.querySelector('.neia');
+        const enemies = document.querySelectorAll('.enemy');
+        const range = document.getElementById('range');
+        const blob = document.getElementById('blob');
+        const msg = document.getElementById('msg');
+        const marks = [
+            document.getElementById('m1'),
+            document.getElementById('m2'),
+            document.getElementById('m3')
+        ];
+        
+        const slider = document.getElementById('pullSlider');
+        const pullValue = document.getElementById('pullValue');
+        
+        slider.addEventListener('input', function() {
+            pullStrength = parseInt(this.value);
+            pullValue.textContent = pullStrength;
+        });
+        
+        function start() {
+            if (active || running) return;
+            active = true;
+            
+            const nx = parseInt(neia.style.left) + 40;
+            const ny = parseInt(neia.style.top) + 40;
+            
+            range.style.left = (nx - 550) + 'px';
+            range.style.top = (ny - 550) + 'px';
+            range.style.display = 'block';
+            
+            msg.textContent = '필드를 클릭하여 물 웅덩이 생성 위치 지정';
+        }
+        
+        field.addEventListener('click', function(e) {
+            if (!active || running) return;
+            
+            const rect = field.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const nx = parseInt(neia.style.left) + 40;
+            const ny = parseInt(neia.style.top) + 40;
+            const dist = Math.sqrt((x-nx)*(x-nx) + (y-ny)*(y-ny));
+            
+            if (dist <= 550) {
+                cast(x, y);
+            }
+        });
+        
+        function cast(x, y) {
+            running = true;
+            active = false;
+            range.style.display = 'none';
+            
+            blob.style.left = (x - 150) + 'px';
+            blob.style.top = (y - 150) + 'px';
+            blob.style.display = 'flex';
+            
+            msg.textContent = '물 웅덩이 생성! 적을 끌어당깁니다!';
+            
+            setTimeout(() => {
+                let cnt = 0;
+                enemies.forEach((e, i) => {
+                    const ex = parseInt(e.style.left) + 40;
+                    const ey = parseInt(e.style.top) + 40;
+                    const d = Math.sqrt((ex-x)*(ex-x) + (ey-y)*(ey-y));
+                    
+                    if (d <= 150) {
+                        cnt++;
+                        const angle = Math.atan2(y - ey, x - ex);
+                        const startX = parseInt(e.style.left);
+                        const startY = parseInt(e.style.top);
+                        const targetX = startX + Math.cos(angle) * pullStrength;
+                        const targetY = startY + Math.sin(angle) * pullStrength;
+                        
+                        // 천천히 끌어당기기 (2초 동안)
+                        e.style.transition = 'all 2s ease-out';
+                        e.style.left = targetX + 'px';
+                        e.style.top = targetY + 'px';
+                        
+                        setTimeout(() => {
+                            marks[i].style.left = targetX + 'px';
+                            marks[i].style.top = (targetY - 35) + 'px';
+                            marks[i].style.display = 'block';
+                        }, 2000);
+                    }
+                });
+                
+                if (cnt > 0) {
+                    msg.textContent = `적 ${cnt}명 끌어당기는 중... 둔화 30%`;
+                    setTimeout(() => {
+                        msg.textContent = `적 ${cnt}명 끌어당김 완료! 물자국 부여!`;
+                    }, 2000);
+                }
+            }, 300);
+            
+            setTimeout(() => {
+                blob.style.display = 'none';
+                msg.textContent = '물 웅덩이 종료';
+                running = false;
+            }, 4000);
+        }
+        
+        function reset() {
+            active = false;
+            running = false;
+            range.style.display = 'none';
+            blob.style.display = 'none';
+            marks.forEach(m => m.style.display = 'none');
+            
+            enemies[0].style.transition = 'all 0.3s';
+            enemies[1].style.transition = 'all 0.3s';
+            enemies[2].style.transition = 'all 0.3s';
+            
+            enemies[0].style.left = '350px';
+            enemies[0].style.top = '200px';
+            enemies[1].style.left = '450px';
+            enemies[1].style.top = '150px';
+            enemies[2].style.left = '550px';
+            enemies[2].style.top = '200px';
+            
+            setTimeout(() => {
+                enemies.forEach(e => e.style.transition = '');
+            }, 300);
+            
+            msg.textContent = 'E 스킬 발동 버튼을 클릭하세요';
+        }
+        
+        // 드래그
+        let drag = null;
+        let ox = 0;
+        let oy = 0;
+        
+        enemies.forEach(e => {
+            e.addEventListener('mousedown', function(ev) {
+                drag = this;
+                const r = this.getBoundingClientRect();
+                ox = ev.clientX - r.left;
+                oy = ev.clientY - r.top;
+                ev.stopPropagation();
+            });
+        });
+        
+        document.addEventListener('mousemove', function(ev) {
+            if (!drag) return;
+            const r = field.getBoundingClientRect();
+            let x = ev.clientX - r.left - ox;
+            let y = ev.clientY - r.top - oy;
+            x = Math.max(0, Math.min(x, field.offsetWidth - 80));
+            y = Math.max(0, Math.min(y, field.offsetHeight - 80));
+            drag.style.left = x + 'px';
+            drag.style.top = y + 'px';
+        });
+        
+        document.addEventListener('mouseup', function() {
+            drag = null;
+        });
+    </script>
+</body>
+</html>
