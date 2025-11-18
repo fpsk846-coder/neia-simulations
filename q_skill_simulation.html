@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이아 - Q: 우산 총격</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #fffcef;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background: #6bbccb;
+            padding: 30px;
+            text-align: center;
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+        }
+        .content {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            padding: 30px;
+            background: #fffcef;
+        }
+        .panel {
+            background: white;
+            border: 3px solid #6bbccb;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .panel h3 {
+            color: #6bbccb;
+            margin: 0 0 15px 0;
+            border-bottom: 2px solid #e1efe8;
+            padding-bottom: 10px;
+        }
+        .game-area {
+            position: relative;
+            width: 100%;
+            height: 600px;
+            background: #e1efe8;
+            border: 4px solid #6bbccb;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .character, .enemy {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            cursor: move;
+            user-select: none;
+        }
+        .character {
+            background: linear-gradient(135deg, #6bbccb, #4a9daa);
+            border: 4px solid #2d7d8a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .enemy {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            border: 4px solid #c92a2a;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .projectile {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #6bbccb, rgba(107,188,203,0.5));
+            border: 3px solid #4a9daa;
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(107,188,203,1);
+            z-index: 8;
+        }
+        .range {
+            position: absolute;
+            border: 3px dashed rgba(107,188,203,0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+        }
+        .range.show { display: block; }
+        .damage {
+            position: absolute;
+            color: #ff6b6b;
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px black;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .damage.crit {
+            color: #ffd700;
+            font-size: 42px;
+            text-shadow: 0 0 10px #ffd700;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+        .btn-fire {
+            background: #6bbccb;
+            color: white;
+            font-size: 20px;
+            padding: 20px;
+        }
+        .btn-fire:hover { background: #4a9daa; }
+        .btn-fire:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: white;
+            color: #6bbccb;
+            border: 2px solid #6bbccb;
+        }
+        .btn-secondary:hover {
+            background: #6bbccb;
+            color: white;
+        }
+        .info {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 2px solid #e1efe8;
+        }
+        .info:last-child { border-bottom: none; }
+        .info-label { color: #555; font-weight: 600; }
+        .info-value { color: #6bbccb; font-weight: bold; }
+        .stack-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        .stack-btn {
+            width: 40px;
+            height: 40px;
+            background: #6bbccb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+        }
+        .stack-btn:hover { background: #4a9daa; }
+        .stack-display {
+            flex: 1;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #6bbccb;
+            background: #e1efe8;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .damage-preview {
+            background: #e1efe8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .damage-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .damage-row .label { color: #555; }
+        .damage-row .value { color: #6bbccb; font-weight: bold; }
+        .instructions {
+            background: #e1efe8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 5px solid #6bbccb;
+        }
+        .instructions p {
+            color: #555;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💧 네이아 - Q: 우산 총격</h1>
+            <p>Overwhelming Pressure</p>
+        </div>
+        <div class="content">
+            <div class="left">
+                <div class="panel">
+                    <h3>🎮 스킬 사용</h3>
+                    <button class="btn-fire" id="fireBtn" onclick="fireQ()">⚡ Q 스킬 발사</button>
+                    <button class="btn-secondary" onclick="toggleRange()">📏 사거리 표시</button>
+                    <button class="btn-secondary" onclick="reset()">🔄 리셋</button>
+                </div>
+
+                <div class="panel">
+                    <h3>⚡ 물자국 중첩 관리</h3>
+                    <div class="stack-controls">
+                        <button class="stack-btn" onclick="changeStack(-1)">−</button>
+                        <div class="stack-display" id="stackDisplay">0중첩</div>
+                        <button class="stack-btn" onclick="changeStack(1)">+</button>
+                    </div>
+                    <p style="font-size: 12px; color: #666; margin-top: 10px;">
+                        • 1중첩: 추가 피해 +15%<br>
+                        • 4중첩: 추가 피해 +20%
+                    </p>
+                </div>
+
+                <div class="panel">
+                    <h3>📊 피해량 계산</h3>
+                    <div class="damage-preview">
+                        <div class="damage-row">
+                            <span class="label">기본 피해:</span>
+                            <span class="value" id="baseDmg">60</span>
+                        </div>
+                        <div class="damage-row">
+                            <span class="label">마법 공격력 (50%):</span>
+                            <span class="value" id="apDmg">30</span>
+                        </div>
+                        <div class="damage-row">
+                            <span class="label">물자국 보너스:</span>
+                            <span class="value" id="watermarkBonus">+0%</span>
+                        </div>
+                        <div class="damage-row" style="border-top: 2px solid #6bbccb; padding-top: 5px; margin-top: 5px;">
+                            <span class="label" style="font-size: 16px; font-weight: bold;">총 피해:</span>
+                            <span class="value" style="font-size: 18px;" id="totalDmg">90</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>📊 전투 정보</h3>
+                    <div class="info">
+                        <span class="info-label">발사 횟수</span>
+                        <span class="info-value" id="shots">0</span>
+                    </div>
+                    <div class="info">
+                        <span class="info-label">명중 횟수</span>
+                        <span class="info-value" id="hits">0</span>
+                    </div>
+                    <div class="info">
+                        <span class="info-label">총 피해량</span>
+                        <span class="info-value" id="totalDamage">0</span>
+                    </div>
+                    <div class="info">
+                        <span class="info-label">현재 쿨타임</span>
+                        <span class="info-value" id="cdDisplay">14초</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>📐 스킬 스펙</h3>
+                    <p style="font-size: 13px; color: #666; line-height: 1.8;">
+                        • 피해량: 60/90/120/150/180 (+AP 50%)<br>
+                        • 사거리: 550 units<br>
+                        • 투사체 크기: 30 units<br>
+                        • 투사체 속도: 2000 units/s<br>
+                        • 쿨타임: 14/13/12/11/10초<br>
+                        • 물자국 보너스: 15% (1중첩), 20% (4중첩)
+                    </p>
+                </div>
+            </div>
+
+            <div class="right">
+                <div class="instructions">
+                    <p><strong>💧 네이아</strong>와 <strong>👹 적</strong>을 드래그하여 배치하세요.</p>
+                    <p><strong>⚡ 물자국 중첩</strong>을 조절하여 보너스 피해를 확인하세요.</p>
+                    <p><strong>Q 스킬 발사</strong>로 강력한 우산 총격을 발사하세요!</p>
+                </div>
+                <div class="panel" style="flex:1;">
+                    <div class="game-area" id="area">
+                        <div class="range" id="range"></div>
+                        <div class="character" id="char">💧</div>
+                        <div class="enemy" id="enemy">👹</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const area = document.getElementById('area');
+        const char = document.getElementById('char');
+        const enemy = document.getElementById('enemy');
+        const range = document.getElementById('range');
+        const fireBtn = document.getElementById('fireBtn');
+
+        let cx = 150, cy = 260;
+        let ex = 600, ey = 260;
+        let shots = 0, hits = 0, totalDamage = 0;
+        let showRange = false;
+        let draggingChar = false, draggingEnemy = false;
+        let ox = 0, oy = 0;
+        
+        let watermarkStack = 0;
+        let cooldown = 14;
+        let currentCooldown = 0;
+        let isCooldown = false;
+
+        const baseDamages = [60, 90, 120, 150, 180];
+        let skillLevel = 0;
+
+        char.style.left = cx + 'px';
+        char.style.top = cy + 'px';
+        enemy.style.left = ex + 'px';
+        enemy.style.top = ey + 'px';
+
+        char.onmousedown = (e) => {
+            draggingChar = true;
+            ox = e.clientX - char.offsetLeft;
+            oy = e.clientY - char.offsetTop;
+            e.stopPropagation();
+        };
+
+        enemy.onmousedown = (e) => {
+            draggingEnemy = true;
+            ox = e.clientX - enemy.offsetLeft;
+            oy = e.clientY - enemy.offsetTop;
+            e.stopPropagation();
+        };
+
+        document.onmousemove = (e) => {
+            if (draggingChar) {
+                let x = e.clientX - ox;
+                let y = e.clientY - oy;
+                x = Math.max(0, Math.min(x, area.offsetWidth - 80));
+                y = Math.max(0, Math.min(y, area.offsetHeight - 80));
+                cx = x; cy = y;
+                char.style.left = x + 'px';
+                char.style.top = y + 'px';
+                updateRange();
+            }
+            if (draggingEnemy) {
+                let x = e.clientX - ox;
+                let y = e.clientY - oy;
+                x = Math.max(0, Math.min(x, area.offsetWidth - 80));
+                y = Math.max(0, Math.min(y, area.offsetHeight - 80));
+                ex = x; ey = y;
+                enemy.style.left = x + 'px';
+                enemy.style.top = y + 'px';
+            }
+        };
+
+        document.onmouseup = () => {
+            draggingChar = false;
+            draggingEnemy = false;
+        };
+
+        function changeStack(delta) {
+            watermarkStack = Math.max(0, Math.min(4, watermarkStack + delta));
+            updateDamage();
+        }
+
+        function updateDamage() {
+            const baseDmg = baseDamages[skillLevel];
+            const apDmg = Math.floor(baseDmg * 0.5);
+            
+            let bonus = 0;
+            if (watermarkStack >= 1) {
+                bonus = 0.15;
+            }
+            if (watermarkStack >= 4) {
+                bonus = 0.20;
+            }
+            
+            const watermarkDmg = Math.floor((baseDmg + apDmg) * bonus);
+            const total = baseDmg + apDmg + watermarkDmg;
+            
+            document.getElementById('stackDisplay').textContent = watermarkStack + '중첩';
+            document.getElementById('baseDmg').textContent = baseDmg;
+            document.getElementById('apDmg').textContent = apDmg;
+            document.getElementById('watermarkBonus').textContent = watermarkStack === 0 ? '+0%' : '+' + (bonus * 100).toFixed(0) + '%';
+            document.getElementById('totalDmg').textContent = total;
+        }
+
+        function toggleRange() {
+            showRange = !showRange;
+            if (showRange) {
+                range.classList.add('show');
+                updateRange();
+            } else {
+                range.classList.remove('show');
+            }
+        }
+
+        function updateRange() {
+            if (!showRange) return;
+            const r = 550;
+            const centerX = cx + 40;
+            const centerY = cy + 40;
+            range.style.width = (r * 2) + 'px';
+            range.style.height = (r * 2) + 'px';
+            range.style.left = (centerX - r) + 'px';
+            range.style.top = (centerY - r) + 'px';
+        }
+
+        function fireQ() {
+            if (isCooldown) return;
+
+            const ccx = cx + 40;
+            const ccy = cy + 40;
+            const ecx = ex + 40;
+            const ecy = ey + 40;
+            const dx = ecx - ccx;
+            const dy = ecy - ccy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist > 550) {
+                alert('사거리 밖입니다!');
+                return;
+            }
+
+            shots++;
+            document.getElementById('shots').textContent = shots;
+            startCooldown();
+
+            const proj = document.createElement('div');
+            proj.className = 'projectile';
+            area.appendChild(proj);
+
+            let px = ccx, py = ccy;
+            const angle = Math.atan2(dy, dx);
+            const speed = 2000 / 60;
+
+            function move() {
+                px += Math.cos(angle) * speed;
+                py += Math.sin(angle) * speed;
+                proj.style.left = (px - 15) + 'px';
+                proj.style.top = (py - 15) + 'px';
+
+                const d = Math.sqrt((px-ecx)*(px-ecx) + (py-ecy)*(py-ecy));
+                if (d < 55) {
+                    proj.remove();
+                    hit(ecx, ecy);
+                    return;
+                }
+
+                if (px<0 || px>area.offsetWidth || py<0 || py>area.offsetHeight) {
+                    proj.remove();
+                    return;
+                }
+
+                requestAnimationFrame(move);
+            }
+            move();
+        }
+
+        function hit(x, y) {
+            hits++;
+            const baseDmg = baseDamages[skillLevel];
+            const apDmg = Math.floor(baseDmg * 0.5);
+            
+            let bonus = 0;
+            if (watermarkStack >= 1) bonus = 0.15;
+            if (watermarkStack >= 4) bonus = 0.20;
+            
+            const watermarkDmg = Math.floor((baseDmg + apDmg) * bonus);
+            const dmg = baseDmg + apDmg + watermarkDmg;
+            totalDamage += dmg;
+            
+            document.getElementById('hits').textContent = hits;
+            document.getElementById('totalDamage').textContent = totalDamage;
+
+            const d = document.createElement('div');
+            d.className = 'damage';
+            d.textContent = '-' + dmg;
+            if (watermarkStack >= 4) d.classList.add('crit');
+            d.style.left = x + 'px';
+            d.style.top = (y-40) + 'px';
+            area.appendChild(d);
+
+            let o = 1, yy = y-40;
+            function fade() {
+                o -= 0.02;
+                yy -= 2;
+                d.style.opacity = o;
+                d.style.top = yy + 'px';
+                if (o > 0) requestAnimationFrame(fade);
+                else d.remove();
+            }
+            fade();
+        }
+
+        function startCooldown() {
+            isCooldown = true;
+            fireBtn.disabled = true;
+            currentCooldown = cooldown;
+            
+            const interval = setInterval(() => {
+                currentCooldown -= 0.1;
+                document.getElementById('cdDisplay').textContent = currentCooldown.toFixed(1) + '초';
+                
+                if (currentCooldown <= 0) {
+                    clearInterval(interval);
+                    isCooldown = false;
+                    fireBtn.disabled = false;
+                    document.getElementById('cdDisplay').textContent = cooldown + '초';
+                }
+            }, 100);
+        }
+
+        function reset() {
+            cx = 150; cy = 260;
+            ex = 600; ey = 260;
+            shots = 0; hits = 0; totalDamage = 0;
+            watermarkStack = 0;
+            isCooldown = false;
+            currentCooldown = 0;
+            
+            char.style.left = cx + 'px';
+            char.style.top = cy + 'px';
+            enemy.style.left = ex + 'px';
+            enemy.style.top = ey + 'px';
+            
+            fireBtn.disabled = false;
+            
+            document.getElementById('shots').textContent = '0';
+            document.getElementById('hits').textContent = '0';
+            document.getElementById('totalDamage').textContent = '0';
+            document.getElementById('cdDisplay').textContent = cooldown + '초';
+            
+            updateDamage();
+            updateRange();
+            
+            document.querySelectorAll('.projectile').forEach(p => p.remove());
+            document.querySelectorAll('.damage').forEach(d => d.remove());
+        }
+
+        updateDamage();
+    </script>
+</body>
+</html>
