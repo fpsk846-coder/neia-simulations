@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네이아 - W: 우산 방패 시뮬레이션</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFFCEF;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #6BBCCB;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .control-panel {
+            background: #E1EFE8;
+            padding: 25px;
+            border-radius: 15px;
+            width: 350px;
+            flex-shrink: 0;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            flex: 1;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5AACBB;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #6BBCCB;
+            border: 2px solid #6BBCCB;
+        }
+        
+        .btn-secondary:hover {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #E1EFE8;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #6BBCCB;
+        }
+        
+        .simulation-area {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #6BBCCB;
+            position: relative;
+            height: 900px;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 30px;
+            background: #E1EFE8;
+            border-radius: 10px;
+            font-size: 1em;
+            color: #6BBCCB;
+            font-weight: bold;
+        }
+        
+        .game-field {
+            position: relative;
+            width: 100%;
+            height: calc(100% - 100px);
+            display: flex;
+            justify-content: center;
+        }
+        
+        .character {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: grab;
+            user-select: none;
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .character:active {
+            cursor: grabbing;
+        }
+        
+        .neia {
+            background: #6BBCCB;
+            color: white;
+        }
+        
+        .ally {
+            background: #E1EFE8;
+            color: #6BBCCB;
+        }
+        
+        .enemy {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .projectile {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ff4757;
+            border-radius: 50%;
+            left: calc(50% - 10px);
+            top: 50px;
+            opacity: 0;
+            box-shadow: 0 0 10px #ff4757;
+        }
+        
+        .umbrella-container {
+            position: absolute;
+            left: calc(50% - 100px);
+            top: 300px;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        
+        .umbrella-container.active {
+            opacity: 1;
+        }
+        
+        .umbrella {
+            width: 200px;
+            height: 40px;
+            background: #6BBCCB;
+            border-radius: 100px 100px 0 0;
+            border: 4px solid #6BBCCB;
+            position: relative;
+        }
+        
+        .umbrella-label {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6BBCCB;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .umbrella-handle {
+            width: 4px;
+            height: 100px;
+            background: #6BBCCB;
+            position: absolute;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .shield-area {
+            position: absolute;
+            left: calc(50% - 100px);
+            top: 340px;
+            width: 200px;
+            height: 310px;
+            background: rgba(107, 188, 203, 0.15);
+            border: 3px dashed #6BBCCB;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .shield-area.active {
+            opacity: 1;
+        }
+        
+        .shield-label-x {
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6BBCCB;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        
+        .shield-label-y {
+            position: absolute;
+            right: -110px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #6BBCCB;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8em;
+            font-weight: bold;
+            writing-mode: vertical-rl;
+        }
+        
+        .watermark-stack {
+            position: absolute;
+            left: calc(50% - 65px);
+            top: -20px;
+            background: #6BBCCB;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+        }
+        
+        .watermark-stack.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        @keyframes projectile-fall {
+            0% {
+                top: 50px;
+                opacity: 1;
+            }
+            100% {
+                top: 350px;
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💧 네이아 - W: 우산 방패</h1>
+            <p>Umbrella Shield</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="control-panel">
+                <h3 style="margin-bottom: 15px; color: #6BBCCB;">🎮 스킬 사용</h3>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startSimulation()">🌂 W 스킬 발동</button>
+                    <button class="btn btn-secondary" onclick="resetSimulation()">🔄 리셋</button>
+                </div>
+                
+                <div class="info-box">
+                    <h4 style="margin-bottom: 10px; color: #6BBCCB;">💧 보호막 정보</h4>
+                    <div class="info-item">
+                        <span class="info-label">보호막 수치:</span>
+                        <span>100</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">마법력 계수 (60%):</span>
+                        <span>60</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">총 보호막:</span>
+                        <span style="color: #6BBCCB; font-weight: bold;">160</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">지속 시간:</span>
+                        <span id="duration">2.0초</span>
+                    </div>
+                </div>
+                
+                <div class="info-box" style="margin-top: 15px;">
+                    <h4 style="margin-bottom: 10px; color: #6BBCCB;">💧 물자국 효과</h4>
+                    <div class="info-item">
+                        <span class="info-label">적이 범위 안에 있을:</span>
+                        <span style="color: #ff6b6b; font-weight: bold;">✓</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">물자국 생성:</span>
+                        <span style="color: #6BBCCB; font-weight: bold;">1개</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">둔화율 (10%):</span>
+                        <span style="color: #6BBCCB;">적용됨</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-area">
+                <div class="status-message" id="statusMessage">
+                    💧 캐릭터를 드래그하여 배치하세요.<br>
+                    💧 W 스킬 발동으로 2초간 보호막을 생성합니다.<br>
+                    💧 적이 우산 방패가 활성화 된 네이아 or 아군을 공격합니다.
+                </div>
+                
+                <div class="game-field">
+                    <div class="character neia" data-char="neia">네이아<br>80U</div>
+                    <div class="character ally" data-char="ally">아군<br>80U</div>
+                    <div class="character enemy" data-char="enemy">적<br>80U</div>
+                    <div class="projectile"></div>
+                    
+                    <div class="umbrella-container">
+                        <div class="umbrella-label">우산의 지름 200U</div>
+                        <div class="umbrella"></div>
+                        <div class="umbrella-handle"></div>
+                    </div>
+                    
+                    <div class="shield-area">
+                        <div class="shield-label-x">보호막 범위 X축 200U</div>
+                        <div class="shield-label-y">보호막 범위 Y축 310U</div>
+                    </div>
+                    
+                    <div class="watermark-stack">💧 물자국 1중첩</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let isAnimating = false;
+        
+        function startSimulation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const projectile = document.querySelector('.projectile');
+            const umbrellaContainer = document.querySelector('.umbrella-container');
+            const shieldArea = document.querySelector('.shield-area');
+            const watermarkStack = document.querySelector('.watermark-stack');
+            const statusMessage = document.getElementById('statusMessage');
+            const durationDisplay = document.getElementById('duration');
+            
+            statusMessage.textContent = '적이 네이아를 향해 공격합니다!';
+            projectile.style.opacity = '1';
+            projectile.style.animation = 'projectile-fall 1.2s linear';
+            
+            setTimeout(() => {
+                statusMessage.textContent = '네이아가 우산을 펼쳐 보호막을 생성합니다!';
+                umbrellaContainer.classList.add('active');
+                shieldArea.classList.add('active');
+            }, 800);
+            
+            setTimeout(() => {
+                projectile.style.opacity = '0';
+                watermarkStack.classList.add('active');
+                statusMessage.textContent = '적에게 물자국 1중첩 부여! (이동 속도 10% 감소)';
+            }, 1200);
+            
+            let timeLeft = 2.0;
+            const countInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                if (timeLeft <= 0) {
+                    clearInterval(countInterval);
+                    durationDisplay.textContent = '0.0초';
+                } else {
+                    durationDisplay.textContent = timeLeft.toFixed(1) + '초';
+                }
+            }, 100);
+            
+            setTimeout(() => {
+                statusMessage.textContent = '보호막이 종료되었습니다. 물자국 효과는 지속됩니다.';
+                umbrellaContainer.classList.remove('active');
+                shieldArea.classList.remove('active');
+                durationDisplay.textContent = '2.0초';
+                isAnimating = false;
+            }, 3200);
+        }
+        
+        function resetSimulation() {
+            isAnimating = false;
+            
+            const projectile = document.querySelector('.projectile');
+            const umbrellaContainer = document.querySelector('.umbrella-container');
+            const shieldArea = document.querySelector('.shield-area');
+            const watermarkStack = document.querySelector('.watermark-stack');
+            const statusMessage = document.getElementById('statusMessage');
+            const durationDisplay = document.getElementById('duration');
+            
+            projectile.style.animation = 'none';
+            projectile.style.opacity = '0';
+            umbrellaContainer.classList.remove('active');
+            shieldArea.classList.remove('active');
+            watermarkStack.classList.remove('active');
+            durationDisplay.textContent = '2.0초';
+            
+            statusMessage.innerHTML = '💧 캐릭터를 드래그하여 배치하세요.<br>💧 W 스킬 발동으로 2초간 보호막을 생성합니다.<br>💧 적이 우산 방패가 활성화 된 네이아 or 아군을 공격합니다.';
+            
+            setTimeout(() => {
+                projectile.style.animation = '';
+            }, 10);
+        }
+        
+        // 드래그 기능
+        let isDragging = false;
+        let currentChar = null;
+        let offsetX = 0;
+        let offsetY = 0;
+        
+        const gameField = document.querySelector('.game-field');
+        const characters = document.querySelectorAll('.character');
+        
+        // 초기 위치 설정 (중앙 정렬)
+        window.addEventListener('load', function() {
+            const fieldWidth = gameField.offsetWidth;
+            const centerX = (fieldWidth / 2) - 40;
+            
+            const neia = document.querySelector('.neia');
+            const ally = document.querySelector('.ally');
+            const enemy = document.querySelector('.enemy');
+            
+            neia.style.left = centerX + 'px';
+            neia.style.top = '450px';
+            
+            ally.style.left = centerX + 'px';
+            ally.style.top = '600px';
+            
+            enemy.style.left = centerX + 'px';
+            enemy.style.top = '30px';
+        });
+        
+        characters.forEach(char => {
+            char.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                currentChar = this;
+                
+                const rect = this.getBoundingClientRect();
+                const fieldRect = gameField.getBoundingClientRect();
+                
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging || !currentChar) return;
+            
+            const fieldRect = gameField.getBoundingClientRect();
+            
+            let newLeft = e.clientX - fieldRect.left - offsetX;
+            let newTop = e.clientY - fieldRect.top - offsetY;
+            
+            newLeft = Math.max(0, Math.min(newLeft, fieldRect.width - 80));
+            newTop = Math.max(0, Math.min(newTop, fieldRect.height - 80));
+            
+            currentChar.style.left = newLeft + 'px';
+            currentChar.style.top = newTop + 'px';
+        });
+        
+        document.addEventListener('mouseup', function() {
+            isDragging = false;
+            currentChar = null;
+        });
+    </script>
+</body>
+</html>
