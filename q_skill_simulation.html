@@ -206,6 +206,76 @@
             margin: 5px 0;
             font-size: 14px;
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                grid-template-columns: 1fr;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .left {
+                order: 2;
+            }
+
+            .right {
+                order: 1;
+            }
+
+            .game-area {
+                height: 350px;
+                touch-action: none;
+            }
+
+            .character, .enemy {
+                width: 60px;
+                height: 60px;
+                font-size: 22px;
+            }
+
+            .panel {
+                padding: 15px;
+            }
+
+            .btn-fire {
+                padding: 15px;
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .game-area {
+                height: 300px;
+            }
+
+            .character, .enemy {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+
+            .projectile {
+                width: 20px;
+                height: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -372,6 +442,58 @@
         };
 
         document.onmouseup = () => {
+            draggingChar = false;
+            draggingEnemy = false;
+        };
+
+        // 터치 이벤트 (모바일 지원)
+        char.ontouchstart = (e) => {
+            e.preventDefault();
+            draggingChar = true;
+            const touch = e.touches[0];
+            const rect = char.getBoundingClientRect();
+            ox = touch.clientX - rect.left;
+            oy = touch.clientY - rect.top;
+        };
+
+        enemy.ontouchstart = (e) => {
+            e.preventDefault();
+            draggingEnemy = true;
+            const touch = e.touches[0];
+            const rect = enemy.getBoundingClientRect();
+            ox = touch.clientX - rect.left;
+            oy = touch.clientY - rect.top;
+        };
+
+        document.ontouchmove = (e) => {
+            if (draggingChar || draggingEnemy) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const areaRect = area.getBoundingClientRect();
+                
+                if (draggingChar) {
+                    let x = touch.clientX - areaRect.left - ox;
+                    let y = touch.clientY - areaRect.top - oy;
+                    x = Math.max(0, Math.min(x, area.offsetWidth - 80));
+                    y = Math.max(0, Math.min(y, area.offsetHeight - 80));
+                    cx = x; cy = y;
+                    char.style.left = x + 'px';
+                    char.style.top = y + 'px';
+                    updateRange();
+                }
+                if (draggingEnemy) {
+                    let x = touch.clientX - areaRect.left - ox;
+                    let y = touch.clientY - areaRect.top - oy;
+                    x = Math.max(0, Math.min(x, area.offsetWidth - 80));
+                    y = Math.max(0, Math.min(y, area.offsetHeight - 80));
+                    ex = x; ey = y;
+                    enemy.style.left = x + 'px';
+                    enemy.style.top = y + 'px';
+                }
+            }
+        };
+
+        document.ontouchend = () => {
             draggingChar = false;
             draggingEnemy = false;
         };
