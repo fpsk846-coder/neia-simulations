@@ -365,6 +365,106 @@
             font-size: 1.2em;
             margin-right: 5px;
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+                border-radius: 15px 15px 0 0;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .content {
+                grid-template-columns: 1fr;
+                padding: 15px;
+                gap: 15px;
+            }
+
+            .left-panel {
+                order: 2;
+            }
+
+            .right-panel {
+                order: 1;
+            }
+
+            .game-area {
+                height: 350px;
+                touch-action: none;
+            }
+
+            .character, .enemy, .watermark {
+                width: 40px;
+                height: 40px;
+            }
+
+            .character::after, .enemy::after {
+                font-size: 11px;
+                padding: 3px 8px;
+                top: -25px;
+            }
+
+            .stack-indicator {
+                font-size: 11px;
+                top: -45px;
+            }
+
+            .panel-box {
+                padding: 15px;
+            }
+
+            .panel-box h3 {
+                font-size: 1.1em;
+            }
+
+            .big-button {
+                padding: 15px;
+                font-size: 1.2em;
+            }
+
+            .slider-label {
+                font-size: 13px;
+            }
+
+            .slider-value {
+                font-size: 13px;
+            }
+
+            .instructions p {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .game-area {
+                height: 300px;
+            }
+
+            .character, .enemy, .watermark {
+                width: 35px;
+                height: 35px;
+            }
+
+            .character::after, .enemy::after {
+                font-size: 10px;
+                top: -22px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -597,6 +697,57 @@
                 isDraggingEnemy = false;
                 enemy.style.cursor = 'move';
             }
+        });
+
+        // 터치 이벤트 (모바일 지원)
+        character.addEventListener('touchstart', (e) => {
+            if (isRunning) return;
+            e.preventDefault();
+            isDraggingCharacter = true;
+            const touch = e.touches[0];
+            const rect = character.getBoundingClientRect();
+            dragOffsetX = touch.clientX - rect.left;
+            dragOffsetY = touch.clientY - rect.top;
+        });
+
+        enemy.addEventListener('touchstart', (e) => {
+            if (isRunning) return;
+            e.preventDefault();
+            isDraggingEnemy = true;
+            const touch = e.touches[0];
+            const rect = enemy.getBoundingClientRect();
+            dragOffsetX = touch.clientX - rect.left;
+            dragOffsetY = touch.clientY - rect.top;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (isDraggingCharacter || isDraggingEnemy) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const rect = gameArea.getBoundingClientRect();
+                
+                if (isDraggingCharacter) {
+                    const x = Math.max(0, Math.min(touch.clientX - rect.left - dragOffsetX, gameArea.offsetWidth - 50));
+                    const y = Math.max(0, Math.min(touch.clientY - rect.top - dragOffsetY, gameArea.offsetHeight - 50));
+                    characterX = x;
+                    characterY = y;
+                    character.style.left = x + 'px';
+                    character.style.top = y + 'px';
+                }
+                if (isDraggingEnemy) {
+                    const x = Math.max(0, Math.min(touch.clientX - rect.left - dragOffsetX, gameArea.offsetWidth - 50));
+                    const y = Math.max(0, Math.min(touch.clientY - rect.top - dragOffsetY, gameArea.offsetHeight - 50));
+                    enemyX = x;
+                    enemyY = y;
+                    enemy.style.left = x + 'px';
+                    enemy.style.top = y + 'px';
+                }
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => {
+            isDraggingCharacter = false;
+            isDraggingEnemy = false;
         });
 
         function toggleSimulation() {
