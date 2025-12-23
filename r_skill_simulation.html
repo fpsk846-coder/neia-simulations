@@ -266,6 +266,81 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.2; }
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 900px) {
+            .container {
+                padding: 0 10px 10px 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+                margin-bottom: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .main-content {
+                flex-direction: column;
+            }
+
+            .control-panel {
+                width: 100%;
+                order: 2;
+            }
+
+            .simulation-area {
+                order: 1;
+                padding: 15px;
+                overflow-x: auto;
+            }
+
+            .field {
+                width: 100%;
+                min-width: 350px;
+                height: 400px;
+                touch-action: none;
+            }
+
+            .char {
+                width: 50px;
+                height: 50px;
+                font-size: 0.7em;
+            }
+
+            .rain-range {
+                width: 300px !important;
+                height: 300px !important;
+            }
+
+            .shield-range {
+                width: 200px !important;
+                height: 200px !important;
+            }
+
+            .umbrella {
+                width: 150px !important;
+                height: 150px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .field {
+                height: 350px;
+            }
+
+            .char {
+                width: 40px;
+                height: 40px;
+                font-size: 0.6em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -541,6 +616,34 @@
         });
         
         document.addEventListener('mouseup', () => drag = null);
+
+        // 터치 이벤트 (모바일 지원)
+        document.querySelectorAll('.char').forEach(c => {
+            if (c.classList.contains('neia')) return;
+            c.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                drag = this;
+                const touch = e.touches[0];
+                const r = this.getBoundingClientRect();
+                ox = touch.clientX - r.left;
+                oy = touch.clientY - r.top;
+            });
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!drag) return;
+            e.preventDefault();
+            const touch = e.touches[0];
+            const r = field.getBoundingClientRect();
+            let x = touch.clientX - r.left - ox;
+            let y = touch.clientY - r.top - oy;
+            x = Math.max(0, Math.min(x, field.offsetWidth - 80));
+            y = Math.max(0, Math.min(y, field.offsetHeight - 80));
+            drag.style.left = x + 'px';
+            drag.style.top = y + 'px';
+        }, { passive: false });
+
+        document.addEventListener('touchend', () => drag = null);
     </script>
 </body>
 </html>
