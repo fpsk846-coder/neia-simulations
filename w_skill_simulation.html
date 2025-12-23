@@ -312,6 +312,97 @@
                 opacity: 1;
             }
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+                margin-bottom: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .header p {
+                font-size: 1em;
+            }
+
+            .main-content {
+                flex-direction: column;
+            }
+
+            .control-panel {
+                width: 100%;
+                order: 2;
+            }
+
+            .simulation-area {
+                order: 1;
+                padding: 15px;
+                height: 500px;
+            }
+
+            .game-field {
+                touch-action: none;
+            }
+
+            .character {
+                width: 60px;
+                height: 60px;
+                font-size: 0.75em;
+            }
+
+            .umbrella-container {
+                left: calc(50% - 75px);
+            }
+
+            .umbrella {
+                width: 150px;
+            }
+
+            .shield-area {
+                width: 150px;
+                left: calc(50% - 75px);
+            }
+
+            .shield-label-y {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .simulation-area {
+                height: 450px;
+            }
+
+            .character {
+                width: 50px;
+                height: 50px;
+                font-size: 0.7em;
+            }
+
+            .umbrella {
+                width: 120px;
+            }
+
+            .umbrella-container {
+                left: calc(50% - 60px);
+            }
+
+            .shield-area {
+                width: 120px;
+                left: calc(50% - 60px);
+            }
+        }
     </style>
 </head>
 <body>
@@ -530,6 +621,43 @@
         });
         
         document.addEventListener('mouseup', function() {
+            isDragging = false;
+            currentChar = null;
+        });
+
+        // 터치 이벤트 (모바일 지원)
+        characters.forEach(char => {
+            char.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                isDragging = true;
+                currentChar = this;
+                
+                const touch = e.touches[0];
+                const rect = this.getBoundingClientRect();
+                
+                offsetX = touch.clientX - rect.left;
+                offsetY = touch.clientY - rect.top;
+            });
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (!isDragging || !currentChar) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const fieldRect = gameField.getBoundingClientRect();
+            
+            let newLeft = touch.clientX - fieldRect.left - offsetX;
+            let newTop = touch.clientY - fieldRect.top - offsetY;
+            
+            newLeft = Math.max(0, Math.min(newLeft, fieldRect.width - 80));
+            newTop = Math.max(0, Math.min(newTop, fieldRect.height - 80));
+            
+            currentChar.style.left = newLeft + 'px';
+            currentChar.style.top = newTop + 'px';
+        }, { passive: false });
+
+        document.addEventListener('touchend', function() {
             isDragging = false;
             currentChar = null;
         });
