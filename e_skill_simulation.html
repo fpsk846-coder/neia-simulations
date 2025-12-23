@@ -192,6 +192,77 @@
             font-weight: bold;
             display: none;
         }
+
+        /* 모바일 반응형 */
+        @media (max-width: 900px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .main-content {
+                flex-direction: column;
+            }
+
+            .control-panel {
+                width: 100%;
+                order: 2;
+            }
+
+            .simulation-area {
+                order: 1;
+                padding: 15px;
+            }
+
+            .field {
+                height: 400px;
+                touch-action: none;
+            }
+
+            .char {
+                width: 60px;
+                height: 60px;
+                font-size: 0.75em;
+            }
+
+            .range-circle {
+                width: 700px;
+                height: 700px;
+            }
+
+            .blob {
+                width: 200px;
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.3em;
+            }
+
+            .field {
+                height: 350px;
+            }
+
+            .char {
+                width: 50px;
+                height: 50px;
+                font-size: 0.7em;
+            }
+
+            .blob {
+                width: 150px;
+                height: 150px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -426,6 +497,52 @@
         
         document.addEventListener('mouseup', function() {
             drag = null;
+        });
+
+        // 터치 이벤트 (모바일 지원)
+        enemies.forEach(e => {
+            e.addEventListener('touchstart', function(ev) {
+                ev.preventDefault();
+                drag = this;
+                const touch = ev.touches[0];
+                const r = this.getBoundingClientRect();
+                ox = touch.clientX - r.left;
+                oy = touch.clientY - r.top;
+            });
+        });
+
+        document.addEventListener('touchmove', function(ev) {
+            if (!drag) return;
+            ev.preventDefault();
+            const touch = ev.touches[0];
+            const r = field.getBoundingClientRect();
+            let x = touch.clientX - r.left - ox;
+            let y = touch.clientY - r.top - oy;
+            x = Math.max(0, Math.min(x, field.offsetWidth - 80));
+            y = Math.max(0, Math.min(y, field.offsetHeight - 80));
+            drag.style.left = x + 'px';
+            drag.style.top = y + 'px';
+        }, { passive: false });
+
+        document.addEventListener('touchend', function() {
+            drag = null;
+        });
+
+        // 터치로 필드 클릭
+        field.addEventListener('touchend', function(e) {
+            if (!active || running) return;
+            const touch = e.changedTouches[0];
+            const rect = field.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const nx = parseInt(neia.style.left) + 40;
+            const ny = parseInt(neia.style.top) + 40;
+            const dist = Math.sqrt((x-nx)*(x-nx) + (y-ny)*(y-ny));
+            
+            if (dist <= 550) {
+                cast(x, y);
+            }
         });
     </script>
 </body>
